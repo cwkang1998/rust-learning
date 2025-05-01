@@ -1,0 +1,17 @@
+[package]
+name = "learning-impl"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "trie"
+path = "src/trie/mod.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+
+[dependencies]
+
+
+
