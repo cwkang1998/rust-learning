@@ -2,6 +2,7 @@
 
 // Radix tree is similar to a normal trie but each node can have more than one character.
 // Its also known as a compressed trie.
+// TODO: refactor this.
 
 use std::{collections::HashMap, f32::consts::PI};
 
@@ -137,6 +138,7 @@ impl RadixTrie {
                     if val.value == Some(current_word.clone()) && val.is_terminal {
                         terminal_reached = true
                     } else {
+                        // Unwrapping here since there's no chance stripping will fail
                         current_word = current_word.strip_prefix(&next_key).unwrap().to_owned();
                     }
                     current = val;
@@ -181,21 +183,34 @@ fn get_common_prefix(word_a: &str, word_b: &str) -> String {
 fn recursively_delete_node(node: &mut RadixTrieNode, word: &str) -> Option<RadixTrieNode> {
     if word.is_empty() && node.is_terminal {
         node.is_terminal = false;
-        // TODO: Special case, if node only a single one we can reconsolidate.
         if !node.children.is_empty() {
+            // Special case: if one node children, we consolidate
+            if node.children.len() == 1 {
+                let children_clone = node.children.clone();
+                // This definitely exist, since there's only a single child.
+                let child = children_clone.iter().next().unwrap();
+                // This should always work too, given all child should have value.
+                node.value.as_mut().unwrap().push_str(child.0);
+                node.children = child.1.children.clone();
+                node.is_terminal = child.1.is_terminal;
+            }
             return Some(node.clone());
         }
         node.value = None;
         return None;
     }
     // Recursively delete the node
-    let next_key = node.children.keys().find_map(|child_key: &String| {
-        let common_prefix = get_common_prefix(word, child_key);
-        if !common_prefix.is_empty() {
-            return Some(common_prefix);
-        }
-        None
-    }).unwrap();
+    let next_key = node
+        .children
+        .keys()
+        .find_map(|child_key: &String| {
+            let common_prefix = get_common_prefix(word, child_key);
+            if !common_prefix.is_empty() {
+                return Some(common_prefix);
+            }
+            None
+        })
+        .unwrap();
 
     let next_node = node.children.get_mut(&next_key).unwrap();
     let next_word = &word[next_key.len()..];
@@ -209,7 +224,15 @@ fn recursively_delete_node(node: &mut RadixTrieNode, word: &str) -> Option<Radix
             }
         }
         Some(trie_node) => {
-            node.children.insert(next_key, trie_node);
+            let mut actual_next_key = next_key.clone();
+            // Special case, if node only a single one we can reconsolidate
+            let trie_node_actual_key = trie_node.value.clone().unwrap();
+            if trie_node_actual_key != next_key {
+                node.children.remove(&next_key);
+                actual_next_key = trie_node_actual_key;
+            }
+
+            node.children.insert(actual_next_key, trie_node);
         }
     };
 
@@ -262,6 +285,7 @@ fn main() {
     println!("{:?}", trie.search("hi"));
     println!("{:?}", trie.search("win"));
     trie.delete("hell");
+    trie.delete("hello");
     println!("{:?}", trie.search("hello"));
     println!("{:?}", trie.search("hell"));
 
