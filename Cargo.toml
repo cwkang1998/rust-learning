@@ -4,8 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "trie"
-path = "src/trie/mod.rs"
+name = "naive-trie"
+path = "src/trie/naive.rs"
+
+
+[[bin]]
+name = "radix-trie"
+path = "src/trie/radix.rs"
 
 [[bin]]
 name = "main"

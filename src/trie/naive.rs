@@ -5,7 +5,6 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 struct NaiveTrieNode {
     is_terminal: bool,
-    is_root: bool,
     value: Option<char>,
     children: HashMap<char, NaiveTrieNode>,
 }
@@ -19,7 +18,6 @@ impl NaiveTrie {
         Self {
             root: NaiveTrieNode {
                 is_terminal: false,
-                is_root: true,
                 value: None,
                 children: HashMap::new(),
             },
@@ -33,7 +31,6 @@ impl NaiveTrie {
                 is_terminal: false,
                 value: Some(c),
                 children: HashMap::new(),
-                is_root: false,
             });
         }
         current.is_terminal = true;
@@ -111,6 +108,7 @@ fn visualize_trie(node: &NaiveTrieNode, prefix: &str, is_last: bool) {
     }
 }
 
+
 fn main() {
     let mut trie = NaiveTrie::new();
     trie.insert("hello");
@@ -137,3 +135,9 @@ fn main() {
     println!("Trie Structure after deletion:");
     visualize_trie(&trie.root, "", true);
 }
+
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+// }
