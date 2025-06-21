@@ -7,10 +7,13 @@ edition = "2024"
 name = "naive-trie"
 path = "src/trie/naive.rs"
 
-
 [[bin]]
 name = "radix-trie"
 path = "src/trie/radix.rs"
+
+[[bin]]
+name = "patricia-trie"
+path = "src/trie/patricia.rs"
 
 [[bin]]
 name = "main"

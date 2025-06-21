@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radix Tree vs Patricia Tree Visualization</title>
+    <style>
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            margin: 20px;
+            line-height: 1.6;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 30px 0;
+        }
+
+        .tree-section {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #444;
+        }
+
+        .tree-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .tree-diagram {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre;
+            font-size: 12px;
+            line-height: 1.4;
+            border: 1px solid #555;
+        }
+
+        .node {
+            color: #FFD700;
+        }
+
+        .edge {
+            color: #87CEEB;
+        }
+
+        .value {
+            color: #FF6B6B;
+        }
+
+        .bit {
+            color: #98FB98;
+        }
+
+        .explanation {
+            background: #2d2d2d;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+        }
+
+        .key-differences {
+            background: #1e2a3a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            border: 2px solid #3498db;
+        }
+
+        .difference-title {
+            color: #3498db;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .diff-item {
+            margin: 10px 0;
+            padding: 8px;
+            background: #2a3441;
+            border-radius: 4px;
+        }
+
+        .radix-color {
+            border-left: 4px solid #FF6B6B;
+        }
+
+        .patricia-color {
+            border-left: 4px solid #4ECDC4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            font-size: 2em;
+            margin-bottom: 30px;
+        }
+
+        .legend {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Radix Tree vs Patricia Tree: Visual Comparison</h1>
+
+        <div class="explanation">
+            <strong>Sample Data:</strong> Let's insert the keys: "cat", "car", "card", "care", "dog" with values 1, 2,
+            3, 4, 6 respectively.
+        </div>
+
+        <div class="comparison">
+            <div class="tree-section">
+                <div class="tree-title">RADIX TREE (String-based)</div>
+                <div class="tree-diagram">
+                    <span class="node">root</span>
+                    ├── <span class="edge">'c'</span>: <span class="edge">'ca'</span>
+                    │ ├── <span class="edge">'r'</span>: <span class="edge">'r'</span> <span class="value">[END:
+                        2]</span>
+                    │ │ ├── <span class="edge">'d'</span>: <span class="edge">'d'</span> <span class="value">[END:
+                        3]</span>
+                    │ │ └── <span class="edge">'e'</span>: <span class="edge">'e'</span> <span class="value">[END:
+                        4]</span>
+                    │ └── <span class="edge">'t'</span>: <span class="edge">'t'</span> <span class="value">[END:
+                        1]</span>
+                    └── <span class="edge">'d'</span>: <span class="edge">'dog'</span> <span class="value">[END:
+                        6]</span>
+
+                    <strong>Key Features:</strong>
+                    • Edge labels compress multiple characters
+                    • "ca" is shared prefix for car/cat/card/care
+                    • More compact for string data
+                    • Variable number of children per node
+                </div>
+            </div>
+
+            <div class="tree-section">
+                <div class="tree-title">PATRICIA TREE (Binary)</div>
+                <div class="tree-diagram">
+                    <span class="node">root</span>[INTERNAL]: test <span class="bit">bit 0</span>
+                    ├── <span class="bit">0</span> → [INTERNAL]: test <span class="bit">bit 1</span>
+                    │ ├── <span class="bit">0</span> → [INTERNAL]: test <span class="bit">bit 8</span>
+                    │ │ ├── <span class="bit">0</span> → [LEAF]: <span class="value">'car' → 2</span>
+                    │ │ └── <span class="bit">1</span> → [INTERNAL]: test <span class="bit">bit 16</span>
+                    │ │ ├── <span class="bit">0</span> → [LEAF]: <span class="value">'cat' → 1</span>
+                    │ │ └── <span class="bit">1</span> → [INTERNAL]: test <span class="bit">bit 24</span>
+                    │ │ ├── <span class="bit">0</span> → [LEAF]: <span class="value">'card' → 3</span>
+                    │ │ └── <span class="bit">1</span> → [LEAF]: <span class="value">'care' → 4</span>
+                    │ └── <span class="bit">1</span> → (other branch)
+                    └── <span class="bit">1</span> → [LEAF]: <span class="value">'dog' → 6</span>
+
+                    <strong>Key Features:</strong>
+                    • Tests individual bits at specific positions
+                    • Binary branching (exactly 2 children)
+                    • All data stored in leaf nodes
+                    • More suitable for binary/bit operations
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <strong>Legend:</strong><br>
+            <div class="legend-item"><span class="node">■</span> Node names</div>
+            <div class="legend-item"><span class="edge">■</span> Edge labels / compressed strings</div>
+            <div class="legend-item"><span class="value">■</span> End values</div>
+            <div class="legend-item"><span class="bit">■</span> Bit positions and values</div>
+        </div>
+
+        <div class="key-differences">
+            <div class="difference-title">Key Structural Differences</div>
+
+            <div class="diff-item radix-color">
+                <strong>Radix Tree Characteristics:</strong><br>
+                • Compresses sequential characters into single edges<br>
+                • Edge labels can be strings of any length<br>
+                • More space-efficient for string/text data<br>
+                • Variable branching factor (2+ children per node)<br>
+                • Internal nodes can store values<br>
+                • Optimized for prefix matching
+            </div>
+
+            <div class="diff-item patricia-color">
+                <strong>Patricia Tree Characteristics:</strong><br>
+                • Binary radix tree (radix = 2)<br>
+                • Tests individual bits at specific positions<br>
+                • Exactly 2 children per internal node (0/1)<br>
+                • All actual data stored only in leaf nodes<br>
+                • More suitable for binary data and IP routing<br>
+                • Deterministic bit-level navigation
+            </div>
+        </div>
+
+        <div class="explanation">
+            <strong>When to Use Which:</strong><br><br>
+            <strong>Radix Trees:</strong> String dictionaries, autocomplete systems, URL routing, file systems<br>
+            <strong>Patricia Trees:</strong> IP routing tables, binary data indexing, network protocols, bit-level
+            operations
+        </div>
+    </div>
+</body>
+
+</html>
