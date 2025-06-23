@@ -4,7 +4,7 @@
 // Its also known as a compressed trie.
 // TODO: refactor this.
 
-use std::{collections::HashMap, f32::consts::PI};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 struct RadixTrieNode {
