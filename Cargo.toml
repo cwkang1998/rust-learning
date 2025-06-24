@@ -20,10 +20,11 @@ name = "atomic-playground"
 path = "src/atomics/playground.rs"
 
 [[bin]]
+name = "channel-playground"
+path = "src/channels/playground.rs"
+
+[[bin]]
 name = "main"
 path = "src/main.rs"
 
 [dependencies]
-
-
-
