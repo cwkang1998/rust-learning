@@ -108,7 +108,6 @@ fn visualize_trie(node: &NaiveTrieNode, prefix: &str, is_last: bool) {
     }
 }
 
-
 fn main() {
     let mut trie = NaiveTrie::new();
     trie.insert("hello");
@@ -135,7 +134,6 @@ fn main() {
     println!("Trie Structure after deletion:");
     visualize_trie(&trie.root, "", true);
 }
-
 
 // #[cfg(test)]
 // mod tests {
