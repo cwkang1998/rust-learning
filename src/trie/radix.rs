@@ -9,7 +9,6 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 struct RadixTrieNode {
     is_terminal: bool,
-    value: Option<String>,
     children: HashMap<String, RadixTrieNode>,
 }
 
@@ -22,7 +21,6 @@ impl RadixTrie {
         Self {
             root: RadixTrieNode {
                 is_terminal: false,
-                value: None,
                 children: HashMap::new(),
             },
         }
@@ -56,7 +54,6 @@ impl RadixTrie {
                         word.clone(),
                         RadixTrieNode {
                             is_terminal: true,
-                            value: Some(word.to_string()),
                             children: HashMap::new(),
                         },
                     );
@@ -75,15 +72,12 @@ impl RadixTrie {
                 current = next_node;
             } else {
                 // Case 4: There's a common prefix, and an existing node, we split the node and reorg the tree.
-                let mut current_next_node = current.children.remove(&next_possible_node).unwrap();
-                let current_next_node_new_key = current_next_node
-                    .value
+                let current_next_node = current.children.remove(&next_possible_node).unwrap();
+                let current_next_node_new_key = next_possible_node
                     .clone()
-                    .unwrap()
                     .strip_prefix(&next_key)
                     .unwrap()
                     .to_owned();
-                current_next_node.value = Some(current_next_node_new_key.clone());
 
                 // Special case where the prefix is also the same as the new word inserted.
                 // in this case terminate early.
@@ -92,7 +86,6 @@ impl RadixTrie {
                 let mut new_next_node = RadixTrieNode {
                     children: HashMap::new(),
                     is_terminal: is_new_node_terminal,
-                    value: Some(next_key.clone()),
                 };
                 new_next_node
                     .children
@@ -135,7 +128,7 @@ impl RadixTrie {
             match next_val {
                 None => return false,
                 Some(val) => {
-                    if val.value == Some(current_word.clone()) && val.is_terminal {
+                    if next_key == current_word && val.is_terminal {
                         terminal_reached = true
                     } else {
                         // Unwrapping here since there's no chance stripping will fail
@@ -184,52 +177,47 @@ fn recursively_delete_node(node: &mut RadixTrieNode, word: &str) -> Option<Radix
     if word.is_empty() && node.is_terminal {
         node.is_terminal = false;
         if !node.children.is_empty() {
-            // Special case: if one node children, we consolidate
-            if node.children.len() == 1 {
-                let children_clone = node.children.clone();
-                // This definitely exist, since there's only a single child.
-                let child = children_clone.iter().next().unwrap();
-                // This should always work too, given all child should have value.
-                node.value.as_mut().unwrap().push_str(child.0);
-                node.children = child.1.children.clone();
-                node.is_terminal = child.1.is_terminal;
-            }
             return Some(node.clone());
         }
-        node.value = None;
         return None;
     }
-    // Recursively delete the node
+
+    // Find the child key that is a prefix of the word to follow the path.
     let next_key = node
         .children
         .keys()
-        .find_map(|child_key: &String| {
-            let common_prefix = get_common_prefix(word, child_key);
-            if !common_prefix.is_empty() {
-                return Some(common_prefix);
-            }
-            None
-        })
-        .unwrap();
+        .find(|&child_key| word.starts_with(child_key))
+        .cloned();
+
+    // if we cannot find the next key, it means the word doesn't exist in the tree.
+    // return the node as it is.
+    let next_key = match next_key {
+        None => return Some(node.clone()),
+        Some(key) => key
+    };
 
     let next_node = node.children.get_mut(&next_key).unwrap();
     let next_word = &word[next_key.len()..];
-    let new_node = recursively_delete_node(next_node, next_word);
-    match new_node {
+    match recursively_delete_node(next_node, next_word) {
         None => {
             node.children.remove(&next_key);
-            if node.children.is_empty() {
-                node.value = None;
+
+            // If there's a non terminal leaf, it should be deleted too.
+            if node.children.is_empty() && !node.is_terminal {
                 return None;
             }
         }
-        Some(trie_node) => {
-            let mut actual_next_key = next_key.clone();
-            // Special case, if node only a single one we can reconsolidate
-            let trie_node_actual_key = trie_node.value.clone().unwrap();
-            if trie_node_actual_key != next_key {
+        Some(mut trie_node) => {
+            let old_key_part = try_compress_node(&mut trie_node);
+
+            let actual_next_key = if let Some(old_key) = old_key_part {
+                next_key.clone() + &old_key
+            } else {
+                next_key.clone()
+            };
+
+            if actual_next_key != next_key {
                 node.children.remove(&next_key);
-                actual_next_key = trie_node_actual_key;
             }
 
             node.children.insert(actual_next_key, trie_node);
@@ -239,21 +227,34 @@ fn recursively_delete_node(node: &mut RadixTrieNode, word: &str) -> Option<Radix
     Some(node.clone())
 }
 
-fn visualize_trie(node: &RadixTrieNode, prefix: &str, is_last: bool) {
+// Try to compress the provided node, and return the children's key that has been compressed.
+// The return value should be used for calculating the new parent key after compression.
+fn try_compress_node(node: &mut RadixTrieNode) -> Option<String> {
+    if !node.is_terminal && node.children.len() == 1 {
+        let children_clone = node.children.clone();
+        // This definitely exist, since there's only a single child.
+        let child = children_clone.iter().next().unwrap();
+        // This should always work too, given all child should have value.
+        node.children = child.1.children.clone();
+        node.is_terminal = child.1.is_terminal;
+
+        return Some(child.0.to_owned());
+    }
+    None
+}
+
+fn visualize_trie(node: &RadixTrieNode, label: &str, prefix: &str, is_last: bool) {
     // Print the current node
     let marker = if is_last { "└── " } else { "├── " };
-    let value = node
-        .value
-        .clone()
-        .map_or("ROOT".to_string(), |c| c.to_string());
+    let value = if label.is_empty() { "ROOT" } else { label };
     let terminal = if node.is_terminal { " (T)" } else { "" };
-    println!("{}{}{}{}", prefix, marker, value, terminal);
+    println!("{prefix}{marker}{value}{terminal}");
 
     // Calculate the new prefix for children
     let new_prefix = if is_last {
-        format!("{}    ", prefix)
+        format!("{prefix}    ")
     } else {
-        format!("{}│   ", prefix)
+        format!("{prefix}│   ")
     };
 
     // Sort children for consistent visualization
@@ -261,9 +262,9 @@ fn visualize_trie(node: &RadixTrieNode, prefix: &str, is_last: bool) {
     children.sort_by_key(|(c, _)| *c);
 
     // Print children
-    for (i, (_, child)) in children.iter().enumerate() {
+    for (i, (child_key, child)) in children.iter().enumerate() {
         let is_last_child = i == children.len() - 1;
-        visualize_trie(child, &new_prefix, is_last_child);
+        visualize_trie(child, child_key, &new_prefix, is_last_child);
     }
 }
 
@@ -277,7 +278,7 @@ fn main() {
     trie.insert("win");
 
     println!("Trie Structure:");
-    visualize_trie(&trie.root, "", true);
+    visualize_trie(&trie.root, "", "", true);
 
     println!("{:?}", trie.search("hello"));
     println!("{:?}", trie.search("hell"));
@@ -290,11 +291,11 @@ fn main() {
     println!("{:?}", trie.search("hell"));
 
     println!("Trie Structure after deletion:");
-    visualize_trie(&trie.root, "", true);
+    visualize_trie(&trie.root, "", "", true);
 
     trie.delete("hello");
     println!("Trie Structure after deletion:");
-    visualize_trie(&trie.root, "", true);
+    visualize_trie(&trie.root, "", "", true);
 }
 
 #[cfg(test)]
@@ -323,5 +324,32 @@ mod tests {
         let string_b = "abcdefg";
         let result = get_common_prefix(string_a, string_b);
         assert_eq!(result, "abcdefg");
+    }
+
+    #[test]
+    fn test_delete_and_compress_logic() {
+        let mut trie = RadixTrie::new();
+        trie.insert("testing");
+        trie.insert("tester");
+
+        trie.delete("tester");
+
+        assert!(trie.search("testing"));
+        assert!(!trie.search("tester"));
+    }
+
+    #[test]
+    fn test_delete_prefix_of_existing_word() {
+        let mut trie = RadixTrie::new();
+        trie.insert("hello");
+        trie.insert("hell");
+
+        trie.delete("hell");
+        assert!(!trie.search("hell"));
+        assert!(trie.search("hello"));
+
+        // This should not panic and should not delete "hello"
+        trie.delete("he");
+        assert!(trie.search("hello"));
     }
 }
