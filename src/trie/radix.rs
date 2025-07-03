@@ -2,42 +2,39 @@
 
 // Radix tree is similar to a normal trie but each node can have more than one character.
 // Its also known as a compressed trie.
-// TODO: refactor this.
 
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct RadixTrieNode {
-    is_terminal: bool,
     children: HashMap<String, RadixTrieNode>,
+    is_terminal: bool,
 }
 
+#[derive(Debug, Default)]
 struct RadixTrie {
     root: RadixTrieNode,
 }
 
 impl RadixTrie {
     fn new() -> Self {
-        Self {
-            root: RadixTrieNode {
-                is_terminal: false,
-                children: HashMap::new(),
-            },
-        }
+        Default::default()
     }
 
     fn insert(&mut self, input_word: &str) {
-        let mut terminal_reached = false;
+        if input_word.is_empty() {
+            return;
+        }
 
         let mut current: &mut RadixTrieNode = &mut self.root;
-        let mut word: String = input_word.to_owned();
-        while !terminal_reached {
-            // Find common prefix and potential next node.
+        let mut current_word = input_word;
 
+        while !current_word.is_empty() {
+            // Find common prefix and potential next node.
             let next_keys = current.children.keys().find_map(|child_key| {
-                let common_prefix = get_common_prefix(&word, child_key);
+                let common_prefix = get_common_prefix(current_word, child_key);
                 if !common_prefix.is_empty() {
-                    return Some((child_key.to_owned(), common_prefix));
+                    return Some((child_key.to_owned(), common_prefix.to_owned()));
                 }
                 None
             });
@@ -51,7 +48,7 @@ impl RadixTrie {
                 None => {
                     // Case 1: no common prefix, insert new word whole from root.
                     current.children.insert(
-                        word.clone(),
+                        current_word.to_string(),
                         RadixTrieNode {
                             is_terminal: true,
                             children: HashMap::new(),
@@ -62,13 +59,13 @@ impl RadixTrie {
                 Some((next_possible_node, next_key)) => (next_possible_node, next_key),
             };
 
-            if next_possible_node == word {
+            if next_possible_node == current_word {
                 // Case 2: common prefix exists as a node, and its the same as the input, thus the node already exists, and we don't insert.
-                terminal_reached = true;
+                current_word = ""
             } else if next_key == next_possible_node {
                 // Case 3: there's already a node of the prefix, so we continue searching
                 let next_node = current.children.get_mut(&next_possible_node).unwrap();
-                word = word.strip_prefix(&next_possible_node).unwrap().to_owned();
+                current_word = &current_word[next_key.len()..];
                 current = next_node;
             } else {
                 // Case 4: There's a common prefix, and an existing node, we split the node and reorg the tree.
@@ -81,7 +78,7 @@ impl RadixTrie {
 
                 // Special case where the prefix is also the same as the new word inserted.
                 // in this case terminate early.
-                let is_new_node_terminal = next_key == word;
+                let is_new_node_terminal = next_key == current_word;
 
                 let mut new_next_node = RadixTrieNode {
                     children: HashMap::new(),
@@ -95,91 +92,66 @@ impl RadixTrie {
                     .children
                     .insert(next_key.clone(), new_next_node.to_owned());
 
-                word = word.strip_prefix(&next_key).unwrap().to_owned();
+                current_word = &current_word[next_key.len()..];
                 current = current.children.get_mut(&next_key).unwrap();
-
-                terminal_reached = is_new_node_terminal;
             }
         }
     }
 
     fn search(&self, word: &str) -> bool {
-        let mut terminal_reached = false;
-        let mut current = &self.root;
-        let mut current_word = word.to_owned();
+        if word.is_empty() {
+            return false;
+        }
+        let mut current_node = &self.root;
+        let mut word_part = word;
 
-        while !terminal_reached {
-            let next_key = current.children.keys().find_map(|child_key| {
-                let common_prefix = get_common_prefix(&current_word, child_key);
-                if !common_prefix.is_empty() {
-                    return Some(common_prefix);
-                }
-                None
-            });
+        while !word_part.is_empty() {
+            let next_node = current_node
+                .children
+                .iter()
+                .find(|(key, _)| word_part.starts_with(*key));
 
-            let next_key = match next_key {
-                None => {
-                    return false;
-                }
-                Some(key) => key,
-            };
-
-            let next_val = current.children.get(&next_key);
-            match next_val {
-                None => return false,
-                Some(val) => {
-                    if next_key == current_word && val.is_terminal {
-                        terminal_reached = true
-                    } else {
-                        // Unwrapping here since there's no chance stripping will fail
-                        current_word = current_word.strip_prefix(&next_key).unwrap().to_owned();
-                    }
-                    current = val;
-                }
+            if let Some((key, node)) = next_node {
+                word_part = &word_part[key.len()..];
+                current_node = node;
+            } else {
+                return false;
             }
         }
-
-        current.is_terminal
+        current_node.is_terminal
     }
 
     fn delete(&mut self, word: &str) {
-        recursively_delete_node(&mut self.root, word);
+        if !word.is_empty() {
+            recursively_delete_node(&mut self.root, word);
+        }
     }
 }
 
-fn get_common_prefix(word_a: &str, word_b: &str) -> String {
-    let mut common_prefix = String::new();
+fn get_common_prefix<'a>(word_a: &'a str, word_b: &'a str) -> &'a str {
+    let mut end = 0;
 
     if word_a.is_empty() || word_b.is_empty() {
-        return common_prefix;
+        return "";
     }
 
-    let word_a_vec = word_a.chars().collect::<Vec<char>>();
-    let word_b_vec = word_b.chars().collect::<Vec<char>>();
-
-    let (long_vec, short_vec) = if word_a_vec.len() > word_b.len() {
-        (word_a_vec, word_b_vec)
-    } else {
-        (word_b_vec, word_a_vec)
-    };
-
-    for (idx, c) in short_vec.into_iter().enumerate() {
-        if c != long_vec[idx] {
+    for (a, b) in word_a.chars().zip(word_b.chars()) {
+        if a == b {
+            end += a.len_utf8();
+        } else {
             break;
         }
-        common_prefix.push(c);
     }
-
-    common_prefix
+    &word_a[..end]
 }
 
-fn recursively_delete_node(node: &mut RadixTrieNode, word: &str) -> Option<RadixTrieNode> {
+fn recursively_delete_node(node: &mut RadixTrieNode, word: &str) -> bool {
     if word.is_empty() && node.is_terminal {
         node.is_terminal = false;
         if !node.children.is_empty() {
-            return Some(node.clone());
+            return false;
         }
-        return None;
+        return true;
     }
 
     // Find the child key that is a prefix of the word to follow the path.
@@ -190,28 +162,34 @@ fn recursively_delete_node(node: &mut RadixTrieNode, word: &str) -> Option<Radix
         .cloned();
 
     // if we cannot find the next key, it means the word doesn't exist in the tree.
-    // return the node as it is.
-    let next_key = match next_key {
-        None => return Some(node.clone()),
-        Some(key) => key
-    };
+    if let Some(next_key) = next_key {
+        let next_word = &word[next_key.len()..];
 
-    let next_node = node.children.get_mut(&next_key).unwrap();
-    let next_word = &word[next_key.len()..];
-    match recursively_delete_node(next_node, next_word) {
-        None => {
+        let should_delete_node = {
+            let next_node = node.children.get_mut(&next_key).unwrap();
+            recursively_delete_node(next_node, next_word)
+        };
+
+        if should_delete_node {
             node.children.remove(&next_key);
 
             // If there's a non terminal leaf, it should be deleted too.
             if node.children.is_empty() && !node.is_terminal {
-                return None;
+                return true;
             }
-        }
-        Some(mut trie_node) => {
-            let old_key_part = try_compress_node(&mut trie_node);
+        } else {
+            let mut child_node = node.children.remove(&next_key).unwrap();
 
-            let actual_next_key = if let Some(old_key) = old_key_part {
-                next_key.clone() + &old_key
+            // Try to compress the child node.
+            let actual_next_key = if !child_node.is_terminal && child_node.children.len() == 1 {
+                let children_clone = child_node.children.clone();
+                // This definitely exist, since there's only a single child.
+                let child = children_clone.iter().next().unwrap();
+                // This should always work too, given all child should have value.
+                child_node.children = child.1.children.clone();
+                child_node.is_terminal = child.1.is_terminal;
+
+                format!("{}{}", next_key, child.0)
             } else {
                 next_key.clone()
             };
@@ -220,27 +198,11 @@ fn recursively_delete_node(node: &mut RadixTrieNode, word: &str) -> Option<Radix
                 node.children.remove(&next_key);
             }
 
-            node.children.insert(actual_next_key, trie_node);
+            node.children.insert(actual_next_key, child_node);
         }
-    };
-
-    Some(node.clone())
-}
-
-// Try to compress the provided node, and return the children's key that has been compressed.
-// The return value should be used for calculating the new parent key after compression.
-fn try_compress_node(node: &mut RadixTrieNode) -> Option<String> {
-    if !node.is_terminal && node.children.len() == 1 {
-        let children_clone = node.children.clone();
-        // This definitely exist, since there's only a single child.
-        let child = children_clone.iter().next().unwrap();
-        // This should always work too, given all child should have value.
-        node.children = child.1.children.clone();
-        node.is_terminal = child.1.is_terminal;
-
-        return Some(child.0.to_owned());
     }
-    None
+
+    false
 }
 
 fn visualize_trie(node: &RadixTrieNode, label: &str, prefix: &str, is_last: bool) {
