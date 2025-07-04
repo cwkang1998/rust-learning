@@ -12,16 +12,16 @@ struct RadixTrieNode {
 }
 
 #[derive(Debug, Default)]
-struct RadixTrie {
+pub struct RadixTrie {
     root: RadixTrieNode,
 }
 
 impl RadixTrie {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Default::default()
     }
 
-    fn insert(&mut self, input_word: &str) {
+    pub fn insert(&mut self, input_word: &str) {
         if input_word.is_empty() {
             return;
         }
@@ -98,7 +98,7 @@ impl RadixTrie {
         }
     }
 
-    fn search(&self, word: &str) -> bool {
+    pub fn search(&self, word: &str) -> bool {
         if word.is_empty() {
             return false;
         }
@@ -121,7 +121,7 @@ impl RadixTrie {
         current_node.is_terminal
     }
 
-    fn delete(&mut self, word: &str) {
+    pub fn delete(&mut self, word: &str) {
         if !word.is_empty() {
             recursively_delete_node(&mut self.root, word);
         }
