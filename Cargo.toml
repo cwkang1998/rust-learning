@@ -4,9 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+async-trait = "0.1.89"
 deno_ast = { version = "=0.48.0", features = ["transpiling"] }
 deno_core = "0.352.0"
 deno_error = "0.6.1"
+eyre = "0.6.12"
 futures = "0.3.31"
 libp2p = "0.56.0"
 reqwest = "0.12.23"
@@ -49,6 +51,11 @@ path = "src/channels/playground.rs"
 [[bin]]
 name = "runjs"
 path = "src/runjs/main.rs"
+
+
+[[bin]]
+name = "event_bus"
+path = "src/event_bus/main.rs"
 
 [[bin]]
 name = "main"
