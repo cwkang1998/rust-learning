@@ -10,7 +10,7 @@ deno_core = "0.352.0"
 deno_error = "0.6.1"
 eyre = "0.6.12"
 futures = "0.3.31"
-libp2p = "0.56.0"
+libp2p = {version ="0.56.0", features = ["noise", "ping", "tcp", "yamux", "tokio"]}
 reqwest = "0.12.23"
 thiserror = "2.0.15"
 tokio = { version = "1.47.1", features = ["full"] }
@@ -52,10 +52,13 @@ path = "src/channels/playground.rs"
 name = "runjs"
 path = "src/runjs/main.rs"
 
-
 [[bin]]
 name = "event_bus"
 path = "src/event_bus/main.rs"
+
+[[bin]]
+name = "libp2p-ping"
+path = "src/libp2p/ping.rs"
 
 [[bin]]
 name = "main"
