@@ -77,9 +77,9 @@ impl deno_core::ModuleLoader for TsModuleLoader {
     fn load(
         &self,
         module_specifier: &deno_core::ModuleSpecifier,
-        maybe_referrer: Option<&deno_core::ModuleSpecifier>,
-        is_dyn_import: bool,
-        requested_module_type: deno_core::RequestedModuleType,
+        _maybe_referrer: Option<&deno_core::ModuleSpecifier>,
+        _is_dyn_import: bool,
+        _requested_module_type: deno_core::RequestedModuleType,
     ) -> ModuleLoadResponse {
         let module_specifier = module_specifier.clone();
         let module_load = move || {
@@ -112,14 +112,14 @@ impl deno_core::ModuleLoader for TsModuleLoader {
                     scope_analysis: false,
                     maybe_syntax: None,
                 })
-                .map_err(|err| ModuleLoaderError::NotFound)?;
+                .map_err(|_err| ModuleLoaderError::NotFound)?;
                 parsed
                     .transpile(
                         &Default::default(),
                         &Default::default(),
                         &Default::default(),
                     )
-                    .map_err(|err| ModuleLoaderError::Unsupported {
+                    .map_err(|_err| ModuleLoaderError::Unsupported {
                         specifier: Box::new(module_specifier.clone()),
                         maybe_referrer: None,
                     })?

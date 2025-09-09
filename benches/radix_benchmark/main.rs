@@ -1,7 +1,7 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use learning_impl::trie::radix::RadixTrie;
 use std::{
-    fs::{self, File},
+    fs::File,
     hint::black_box,
     io::{BufRead, BufReader},
 };

@@ -6,25 +6,23 @@ use tokio::sync::broadcast;
 
 #[derive(Debug, Clone)]
 pub enum EventKind {
-    StubEvent(String)
+    StubEvent(String),
 }
 
 #[derive(Debug, Clone)]
 pub struct Event {
     pub module: String,
-    pub inner: EventKind
+    pub inner: EventKind,
 }
 
 struct EventBus {
-    sender: broadcast::Sender<Event>
+    sender: broadcast::Sender<Event>,
 }
 
 impl EventBus {
     fn new() -> Self {
         let (sender, _) = broadcast::channel(100);
-        Self {
-            sender
-        }
+        Self { sender }
     }
 
     fn subscribe(&self) -> broadcast::Receiver<Event> {
@@ -40,7 +38,7 @@ impl EventBus {
 pub struct ModuleCtx {
     pub name: String,
     pub sender: broadcast::Sender<Event>,
-    pub receiver: broadcast::Receiver<Event>
+    pub receiver: broadcast::Receiver<Event>,
 }
 
 impl ModuleCtx {
@@ -50,7 +48,7 @@ impl ModuleCtx {
         Self {
             name: name.to_string(),
             sender,
-            receiver
+            receiver,
         }
     }
 }
@@ -63,19 +61,16 @@ pub trait Module {
 
 // --- Module examples ---
 pub struct Network {
-    ctx: ModuleCtx
+    ctx: ModuleCtx,
 }
-
 
 #[async_trait]
 impl Module for Network {
-    fn new(ctx:ModuleCtx) -> Self {
-        Self {
-            ctx
-        }
+    fn new(ctx: ModuleCtx) -> Self {
+        Self { ctx }
     }
 
-    async fn run (&mut self) -> Result<()> {
+    async fn run(&mut self) -> Result<()> {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(5));
         loop {
             tokio::select! {
@@ -91,17 +86,14 @@ impl Module for Network {
     }
 }
 
-
 pub struct Logger {
-    ctx: ModuleCtx
+    ctx: ModuleCtx,
 }
 
 #[async_trait]
 impl Module for Logger {
-    fn new(ctx:ModuleCtx) -> Self {
-        Self {
-            ctx
-        }
+    fn new(ctx: ModuleCtx) -> Self {
+        Self { ctx }
     }
 
     async fn run(&mut self) -> Result<()> {
@@ -123,9 +115,9 @@ impl Module for Logger {
 }
 
 #[tokio::main]
-async fn main() -> Result<()>{
+async fn main() -> Result<()> {
     let event_bus = EventBus::new();
-    
+
     let logger_ctx = ModuleCtx::new("logger", &event_bus);
     let mut logger_mod = Logger::new(logger_ctx);
 
@@ -133,6 +125,6 @@ async fn main() -> Result<()>{
     let mut network_mod = Network::new(network_ctx);
 
     tokio::join!(logger_mod.run(), network_mod.run()).0?;
-    
+
     Ok(())
 }

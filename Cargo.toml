@@ -27,7 +27,7 @@ deno_core = "0.352.0"
 name = "radix_benchmark"
 harness = false
 
-
+# --- data structure ---
 [[bin]]
 name = "naive-trie"
 path = "src/trie/naive.rs"
@@ -40,27 +40,31 @@ path = "src/trie/radix.rs"
 name = "patricia-trie"
 path = "src/trie/patricia.rs"
 
+# --- concurrency playground ---
 [[bin]]
 name = "atomic-playground"
 path = "src/atomics/playground.rs"
 
 [[bin]]
-name = "channel-playground"
-path = "src/channels/playground.rs"
+name = "event_bus"
+path = "src/event_bus/main.rs"
 
+
+# --- PL playground ---
 [[bin]]
 name = "runjs"
 path = "src/runjs/main.rs"
 
-[[bin]]
-name = "event_bus"
-path = "src/event_bus/main.rs"
 
+# --- Libp2p playground ---
 [[bin]]
 name = "libp2p-ping"
 path = "src/libp2p/ping.rs"
 
 [[bin]]
-name = "main"
-path = "src/main.rs"
+name = "libp2p-holepunching"
+path = "src/libp2p/holepunching.rs"
 
+[[bin]]
+name = "libp2p-holepunching-relay"
+path = "src/libp2p/relay.rs"
